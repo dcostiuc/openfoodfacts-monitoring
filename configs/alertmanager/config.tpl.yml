@@ -10,7 +10,7 @@ route:
   routes:
   - receiver: slack
     match:
-      severity: page|warning
+      severity: p0_critical|p1_minor|p2_major
     continue: true
 
 receivers:
@@ -30,3 +30,6 @@ receivers:
        {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
        {{ end }}
      {{ end }}
+    icon_emoji: '{{ if ne .Status "firing" }}:white_check_mark:{ else if eq .CommonLabels.severity "p0_critical" }}:no_entry_sign:{{ else if eq .CommonLabels.severity "p1_major" }}:fire:{{ else if eq .CommonLabels.severity "p2_minor" }}:warning:{{ end }}'
+    color: '{{ if ne .Status "firing" }}#08990f{{ else if eq .CommonLabels.severity "p0_critical" }}#db0b0b{{ else if eq .CommonLabels.severity "p1_major" }}#e2833f{{ else if eq .CommonLabels.severity "p2_minor" }}#eddc24{{ end }}'
+    username: '{{ if ne .Status "firing" }}Resolved{{ else if eq .CommonLabels.severity "p0_critical" }}Critical{{ else if eq .CommonLabels.severity "p1_major" }}Major{{ else if eq .CommonLabels.severity "p2_minor" }}Warning{{ end }}'
