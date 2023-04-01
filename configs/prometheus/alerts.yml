@@ -5,7 +5,7 @@ groups:
       expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 25
       for: 15m
       labels:
-        severity: "{{ if lt $value 20 }} p1-major {{ else if lt $value 10 }}p0-critical{{ else }}p2-minor{{ end }}"
+        severity: "{{ if lt $value 20 }}p1-major{{ else if lt $value 10 }}p0-critical{{ else }}p2-minor{{ end }}"
         instance: "{{ $labels.instance }}"
       annotations:
         summary: "Less than {{ if lt $value 20 }}20{{ else if lt $value 10 }}10{{ else }}25{{ end }}% of memory remaining on {{ $labels.instance }}"
