@@ -1,26 +1,25 @@
 groups:
 - name: node-alerts
   rules:
-  - alert: VMOutOfMemory
-    expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 25
-    for: 15m
-    labels:
-      severity: warning
-      instance: "{{ $labels.instance }}"
-    annotations:
-      summary: Less than 25% of memory remaining on {{ $labels.instance }}
-      description: Remaining memory usage on VM {{ $labels.instance }} is {{ $value }}%  for more than 15 minutes.
+    - alert: VMLowOnMemory
+      expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 25
+      for: 15m
+      labels:
+        severity: "{{ if lt $value 20 }} p1-major {{ else if lt $value 10 }}p0-critical{{ else }}p2-minor{{ end }}"
+        instance: "{{ $labels.instance }}"
+      annotations:
+        summary: "Less than {{ if lt $value 20 }}20{{ else if lt $value 10 }}10{{ else }}25{{ end }}% of memory remaining on {{ $labels.instance }}"
+        description: "Remaining memory usage on VM {{ $labels.instance }} is *{{ $value }}%* for more than 15 minutes."
 
-  - alert: VMOutOfDiskSpace
-    expr: (node_filesystem_avail_bytes{device="/dev/sda1", mountpoint="/"} * 100) / node_filesystem_size_bytes{device="/dev/sda1", mountpoint="/"} < 20
-    for: 15m
-    labels:
-      severity: warning
+    - alert: VMLowOnDiskSpace
+      expr: (node_filesystem_avail_bytes{device="/dev/sda1", mountpoint="/"} * 100) / node_filesystem_size_bytes{device="/dev/sda1", mountpoint="/"} < 20
+      for: 15m
+      labels:
+        severity: "{{ if lt $value 20 }}p1-major{{ else if lt $value 10 }}p0-critical{{ end }}"
       instance: "{{ $labels.instance }}"
-    annotations:
-      summary: Less than 20% of disk space remaining on {{ $labels.instance }}
-      description: Remaining disk space on {{ $labels.instance }} is {{ $value }}% for more than 15 minutes.
-
+      annotations:
+        summary: "Less than {{ if lt $value 20 }}20{{ else if lt $value 10 }}10{{ end }}% of disk space remaining on {{ $labels.instance }}"
+        description: "Remaining disk space on {{ $labels.instance }} is *{{ $value }}%* for more than 15 minutes."
 
 # TODO: Revisit, too noisy
 # - name: docker-alerts
@@ -61,13 +60,13 @@ groups:
     expr: sum by(app, service, env)(gunicorn_request_status{status=~"(2..|3..|4..)"}) / sum by(app, service, env)(gunicorn_request_status) * 100 < 99
     for: 5m
     labels:
-      severity: page
+      severity: p0-critical
       app: robotoff
       service: "{{ $labels.service }}"
       env: "{{ $labels.env }}"
     annotations:
       summary: Too many 5xx in Robotoff HTTP responses
-      description: "Availability SLO is at {{ $value }}% (target=99.99%) for more than 5 minutes."
+      description: "Availability SLO is at *{{ $value }}%* (target=99.99%) for more than 5 minutes."
 
 - name: service-probes
   rules:
@@ -75,10 +74,10 @@ groups:
     expr: probe_success != 1
     for: 5m
     labels:
-      severity: page
+      severity: p0-critical
       app: "{{ $labels.app }}"
       service: "{{ $labels.service }}"
       env: "{{ $labels.env }}"
     annotations:
-      summary: "{{ $labels.app }}-{{ $labels.env }} is down"
-      description: Service probe on URL '{{ $labels.instance }}' failed for more than 5 minutes.
+      summary: "{{ $labels.app }}-{{ $labels.env }} is *down*"
+      description: Service probe on URL '{{ $labels.instance }}' *failed* for more than 5 minutes.
